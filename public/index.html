@@ -21,7 +21,11 @@
 
     <label class="block">
       <span class="text-sm text-gray-600">Select location</span>
-      <select id="location" class="mt-1 w-full border p-2 rounded"></select>
+      <select id="location" class="mt-1 w-full border p-2 rounded">
+        <option value="Location1">Location 1</option>
+        <option value="Location2">Location 2</option>
+        <option value="Location3">Location 3</option>
+      </select>
     </label>
 
     <div class="grid grid-cols-1 gap-4">
@@ -29,7 +33,7 @@
         <span>Cleanliness</span>
         <div id="cleanliness" class="stars"></div>
       </div>
- <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between">
         <span>Water/Soap availability</span>
         <div id="waterSoap" class="stars"></div>
       </div>
@@ -65,33 +69,36 @@
     }
     ['cleanliness','waterSoap','hygiene','odor'].forEach(makeStars);
 
-    async function loadLocations() {
-      const res = await fetch('/api/locations');
-      const locations = await res.json();
-      const sel = document.getElementById('location');
-      locations.forEach(l => {
-        const opt = document.createElement('option');
-        opt.value = l.id; opt.textContent = l.name; sel.appendChild(opt);
-      });
-    }
-
     document.getElementById('submit').onclick = async () => {
       const locationId = document.getElementById('location').value;
       const comment = document.getElementById('comment').value;
-      const payload = { locationId, cleanliness: state.cleanliness, waterSoap: state.waterSoap, hygiene: state.hygiene, odor: state.odor, comment };
-      const res = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const status = document.getElementById('status');
-      if (res.ok) { status.textContent = 'Thanks! Your feedback was submitted.'; document.getElementById('comment').value=''; }
-      else { const e = await res.json(); status.textContent = 'Error: ' + e.error; status.className='text-sm text-red-700'; }
-    };
+      const payload = { 
+        locationId, 
+        cleanliness: state.cleanliness, 
+        waterSoap: state.waterSoap, 
+        hygiene: state.hygiene, 
+        odor: state.odor, 
+        comment 
+      };
 
-    loadLocations();
+      const res = await fetch(
+        "https://script.google.com/macros/s/AKfycbxA75Wu1SUWPR8j2odOfVIgLBi3APolpYaG0HQXsMKWUBxFOjJo35oTXXaKW4jjYd3A/exec",
+        { 
+          method: "POST", 
+          headers: { "Content-Type": "application/json" }, 
+          body: JSON.stringify(payload) 
+        }
+      );
+
+      const status = document.getElementById('status');
+      if (res.ok) { 
+        status.textContent = 'Thanks! Your feedback was submitted.'; 
+        document.getElementById('comment').value=''; 
+      } else { 
+        status.textContent = 'Error submitting feedback.'; 
+        status.className='text-sm text-red-700'; 
+      }
+    };
   </script>
 </body>
-</html> 
-    
-
-
-
-
-
+</html>
