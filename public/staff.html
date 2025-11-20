@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Staff — Swachh Scan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-4xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-semibold">Staff Dashboard</h1>
+
+    <!-- Login -->
+    <div class="flex gap-2">
+      <input id="email" class="border p-2 rounded" placeholder="staff1@example.com" />
+      <input id="password" type="password" class="border p-2 rounded" placeholder="staff123" />
+      <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Login</button>
+    </div>
+
+    <!-- Dashboard content -->
+    <div id="content" class="hidden space-y-6">
+      <!-- Latest grade -->
+      <div class="p-4 border rounded">
+        <h2 class="text-lg font-semibold mb-2">My latest grade</h2>
+        <div id="gradeBox" class="text-sm text-gray-800">—</div>
+      </div>
+
+      <!-- Assigned locations -->
+      <div class="p-4 border rounded">
+        <h2 class="text-lg font-semibold mb-2">Assigned locations</h2>
+        <ul id="locations" class="text-sm space-y-1"></ul>
+      </div>
+
+      <!-- Recent feedback -->
+      <div class="p-4 border rounded">
+        <h2 class="text-lg font-semibold mb-2">Recent feedback</h2>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left"><th>Location</th><th>Ratings</th><th>Comment</th><th>Time</th></tr></thead>
+          <tbody id="feedbackTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let token = null;
+
+    async function login() {
+      const email = document.getElementById('email').value || 'staff1@example.com';
+      const password = document.getElementById('password').value || 'staff123';
+      const res = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const data = await res.json();
+      if (res.ok) { token = data.token; document.getElementById('content').classList.remove('hidden'); loadDashboard(); }
+      else alert('Login failed: ' + (data.error || 'Unknown'));
+    }
+
+    async function loadDashboard() {
+      const res = await fetch('/api/staff/dashboard', { headers: { Authorization: 'Bearer ' + token }});
+      const d = await res.json();
+      const gradeBox = document.getElementById('gradeBox');
+      gradeBox.textContent = d.latestGrade ? `${d.latestGrade.grade} — ${d.latestGrade.note || ''} · ${new Date(d.latestGrade.created_at).toLocaleString()}` : 'No grade yet';
+
+      const ul = document.getElementById('locations'); ul.innerHTML='';
+      d.locations.forEach(l => { const li = document.createElement('li'); li.textContent = l.name; ul.appendChild(li); });
+
+      const tbody = document.getElementById('feedbackTable'); tbody.innerHTML='';
+      d.feedback.forEach(f => {
+        const tr = document.createElement('tr');
+        const ratings = `C:${f.cleanliness} W:${f.water_soap} H:${f.hygiene} O:${f.odor}`;
+        tr.innerHTML = `<td>${f.location}</td><td>${ratings}</td><td>${f.comment || ''}</td><td>${new Date(f.created_at).toLocaleString()}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('loginBtn').onclick = login;
+  </script>
+</body>
+</html>

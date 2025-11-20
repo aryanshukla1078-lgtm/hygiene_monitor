@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Swachh Scan — Public Hygiene Feedback</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-2xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-semibold">Public Hygiene Feedback</h1>
+
+    <!-- Sign-in buttons -->
+    <div class="flex space-x-4">
+      <a href="admin.html" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700">
+        🔑 Admin Sign In
+      </a>
+      <a href="staff.html" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-500">
+        👷 Staff Sign In
+      </a>
+    </div>
+
+    <label class="block">
+      <span class="text-sm text-gray-600">Select location</span>
+      <select id="location" class="mt-1 w-full border p-2 rounded"></select>
+    </label>
+
+    <div class="grid grid-cols-1 gap-4">
+      <div class="flex items-center justify-between">
+        <span>Cleanliness</span>
+        <div id="cleanliness" class="stars"></div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Water/Soap availability</span>
+        <div id="waterSoap" class="stars"></div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Overall hygiene</span>
+        <div id="hygiene" class="stars"></div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Odor</span>
+        <div id="odor" class="stars"></div>
+      </div>
+    </div>
+
+    <textarea id="comment" class="w-full border p-2 rounded" placeholder="Optional comment"></textarea>
+
+    <button id="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Submit feedback</button>
+
+    <div id="status" class="text-sm text-green-700"></div>
+  </div>
+
+  <script>
+    const state = { cleanliness: 0, waterSoap: 0, hygiene: 0, odor: 0 };
+    function makeStars(id) {
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      for (let s = 1; s <= 5; s++) {
+        const b = document.createElement('button');
+        b.textContent = '★';
+        b.className = 'text-2xl mx-1 ' + (s <= state[id] ? 'text-yellow-500' : 'text-gray-300');
+        b.onclick = () => { state[id] = s; makeStars(id); };
+        el.appendChild(b);
+      }
+    }
+    ['cleanliness','waterSoap','hygiene','odor'].forEach(makeStars);
+
+    async function loadLocations() {
+      const res = await fetch('/api/locations');
+      const locations = await res.json();
+      const sel = document.getElementById('location');
+      locations.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.id; opt.textContent = l.name; sel.appendChild(opt);
+      });
+    }
+
+    document.getElementById('submit').onclick = async () => {
+      const locationId = document.getElementById('location').value;
+      const comment = document.getElementById('comment').value;
+      const payload = { locationId, cleanliness: state.cleanliness, waterSoap: state.waterSoap, hygiene: state.hygiene, odor: state.odor, comment };
+      const res = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const status = document.getElementById('status');
+      if (res.ok) { status.textContent = 'Thanks! Your feedback was submitted.'; document.getElementById('comment').value=''; }
+      else { const e = await res.json(); status.textContent = 'Error: ' + e.error; status.className='text-sm text-red-700'; }
+    };
+
+    loadLocations();
+  </script>
+</body>
+</html>
+

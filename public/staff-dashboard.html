@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Swachh Scan — Staff Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-4xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-semibold">Staff Dashboard</h1>
+    <div class="flex space-x-4">
+      <button onclick="logout()" class="bg-gray-800 text-white px-4 py-2 rounded">Logout</button>
+      <button onclick="goHome()" class="bg-gray-600 text-white px-4 py-2 rounded">🏠 Home</button>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-semibold mt-4">Assigned Locations</h2>
+      <ul id="locations" class="list-disc pl-6 text-sm text-gray-700"></ul>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-semibold mt-6">Recent Feedback</h2>
+      <table class="w-full text-sm border mt-2">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2">Location</th>
+            <th class="p-2">Cleanliness</th>
+            <th class="p-2">Water/Soap</th>
+            <th class="p-2">Hygiene</th>
+            <th class="p-2">Odor</th>
+            <th class="p-2">Comment</th>
+            <th class="p-2">Date</th>
+          </tr>
+        </thead>
+        <tbody id="feedbackTable"></tbody>
+      </table>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-semibold mt-6">Latest Grade</h2>
+      <div id="grade" class="text-sm text-gray-700"></div>
+      <canvas id="gradeChart" class="mt-4"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/staff.html';
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+    function goHome() {
+      window.location.href = '/index.html';
+    }
+
+    async function loadDashboard() {
+      const res = await fetch('/api/staff/dashboard', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      // Locations
+      const locList = document.getElementById('locations');
+      locList.innerHTML = '';
+      data.locations.forEach(l => {
+        const li = document.createElement('li');
+        li.textContent = l.name;
+        locList.appendChild(li);
+      });
+
+      // Feedback
+      const tbody = document.getElementById('feedbackTable');
+      tbody.innerHTML = '';
+      data.feedback.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2">${f.location}</td>
+          <td class="p-2">${f.cleanliness}</td>
+          <td class="p-2">${f.water_soap}</td>
+          <td class="p-2">${f.hygiene}</td>
+          <td class="p-2">${f.odor}</td>
+          <td class="p-2">${f.comment || ''}</td>
+          <td class="p-2">${f.created_at}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Grade
+      const grade = data.latestGrade;
+      document.getElementById('grade').textContent = grade
+        ? `Grade: ${grade.grade} (${grade.note || ''}) on ${grade.created_at}`
+        : 'No grade yet';
+
+      if (grade) {
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Grade'],
+            datasets: [{
+              data: [1],
+              backgroundColor: ['#10b981'],
+              label: `Grade ${grade.grade}`
+            }]
+          },
+          options: {
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false }
+            }
+          }
+        });
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

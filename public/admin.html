@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — Swachh Scan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-semibold">Admin Dashboard</h1>
+
+    <!-- Login -->
+    <div class="flex gap-2">
+      <input id="email" class="border p-2 rounded" placeholder="admin@example.com" />
+      <input id="password" type="password" class="border p-2 rounded" placeholder="admin123" />
+      <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Login</button>
+    </div>
+
+    <!-- Dashboard content -->
+    <div id="content" class="hidden space-y-8">
+      <!-- Summary -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="p-4 border rounded">
+          <div class="text-gray-500 text-sm">Total Feedback</div>
+          <div id="totalFeedback" class="text-3xl font-bold">0</div>
+        </div>
+        <div class="p-4 border rounded col-span-2">
+          <div class="text-gray-500 text-sm mb-2">Staff Performance (avg rating)</div>
+          <ul id="staffPerformance" class="space-y-1 text-sm"></ul>
+        </div>
+      </div>
+
+      <!-- Grade staff -->
+      <div class="p-4 border rounded">
+        <h2 class="text-lg font-semibold mb-2">Grade Staff (A–E)</h2>
+        <div class="flex gap-2 mb-2">
+          <select id="staffSelect" class="border p-2 rounded"></select>
+          <select id="gradeSelect" class="border p-2 rounded">
+            <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option>
+          </select>
+          <input id="gradeNote" class="border p-2 rounded flex-1" placeholder="Optional note" />
+          <button id="gradeBtn" class="bg-green-600 text-white px-4 py-2 rounded">Save Grade</button>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold mb-1">Grade history</h3>
+          <ul id="gradeHistory" class="text-sm space-y-1"></ul>
+        </div>
+      </div>
+
+      <!-- Recent feedback -->
+      <div class="p-4 border rounded">
+        <h2 class="text-lg font-semibold mb-2">Recent Feedback</h2>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left"><th>Location</th><th>Ratings</th><th>Comment</th><th>Time</th></tr></thead>
+          <tbody id="feedbackTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let token = null;
+
+    async function login() {
+      const email = document.getElementById('email').value || 'admin@example.com';
+      const password = document.getElementById('password').value || 'admin123';
+      const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const data = await res.json();
+      if (res.ok) { token = data.token; document.getElementById('content').classList.remove('hidden'); loadSummary(); loadFeedback(); loadStaffList(); }
+      else alert('Login failed: ' + (data.error || 'Unknown'));
+    }
+
+    async function loadSummary() {
+      const res = await fetch('/api/admin/summary', { headers: { Authorization: 'Bearer ' + token }});
+      const d = await res.json();
+      document.getElementById('totalFeedback').textContent = d.totalFeedback;
+      const ul = document.getElementById('staffPerformance'); ul.innerHTML='';
+      d.staffPerformance.forEach(s => {
+        const li = document.createElement('li'); li.textContent = `${s.name}: ${Number(s.avg_rating).toFixed(2)}`;
+        ul.appendChild(li);
+      });
+    }
+
+    async function loadFeedback() {
+      const res = await fetch('/api/admin/feedback', { headers: { Authorization: 'Bearer ' + token }});
+      const list = await res.json();
+      const tbody = document.getElementById('feedbackTable'); tbody.innerHTML='';
+      list.forEach(f => {
+        const tr = document.createElement('tr');
+        const ratings = `C:${f.cleanliness} W:${f.water_soap} H:${f.hygiene} O:${f.odor}`;
+        tr.innerHTML = `<td>${f.location}</td><td>${ratings}</td><td>${f.comment || ''}</td><td>${new Date(f.created_at).toLocaleString()}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadStaffList() {
+      const res = await fetch('/api/admin/summary', { headers: { Authorization: 'Bearer ' + token }});
+      const d = await res.json();
+      const sel = document.getElementById('staffSelect'); sel.innerHTML='';
+      d.staffPerformance.forEach(s => {
+        const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+      loadGradeHistory();
+    }
+
+    async function saveGrade() {
+      const staffId = document.getElementById('staffSelect').value;
+      const grade = document.getElementById('gradeSelect').value;
+      const note = document.getElementById('gradeNote').value;
+      const res = await fetch('/api/admin/grade', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ staffId, grade, note }) });
+      if (res.ok) { document.getElementById('gradeNote').value=''; loadGradeHistory(); } else { const e = await res.json(); alert('Failed: ' + e.error); }
+    }
+
+    async function loadGradeHistory() {
+      const staffId = document.getElementById('staffSelect').value;
+      if (!staffId) return;
+      const res = await fetch('/api/admin/grades?staffId=' + staffId, { headers: { Authorization: 'Bearer ' + token }});
+      const list = await res.json();
+      const ul = document.getElementById('gradeHistory'); ul.innerHTML='';
+      list.forEach(g => {
+        const li = document.createElement('li'); li.textContent = `${g.grade} — ${g.note || ''} · ${new Date(g.created_at).toLocaleString()}`;
+        ul.appendChild(li);
+      });
+    }
+
+    document.getElementById('loginBtn').onclick = login;
+    document.getElementById('gradeBtn').onclick = saveGrade;
+    document.getElementById('staffSelect').onchange = loadGradeHistory;
+  </script>
+</body>
+</html>
+
+
