@@ -51,11 +51,12 @@
 
     <button id="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Submit feedback</button>
 
-    <div id="status" class="text-sm text-green-700"></div>
+    <div id="status" class="text-sm"></div>
   </div>
 
   <script>
     const state = { cleanliness: 0, waterSoap: 0, hygiene: 0, odor: 0 };
+
     function makeStars(id) {
       const el = document.getElementById(id);
       el.innerHTML = '';
@@ -81,25 +82,31 @@
         comment 
       };
 
-      const res = await fetch(
-        "https://script.google.com/macros/s/AKfycbzWZ3QSQJUYZb6BhTe895B-hiMJ-pLtfjPq5kPHbPyVf95vBdjmbyxKiHHhVBEfP3H2XA/exec",
-        { 
-          method: "POST", 
-          headers: { "Content-Type": "application/json" }, 
-          body: JSON.stringify(payload) 
-        }
-      );
+      try {
+        const res = await fetch(
+          "https://script.google.com/macros/s/AKfycbxA75Wu1SUWPR8j2odOfVIgLBi3APolpYaG0HQXsMKWUBxFOjJo35oTXXaKW4jjYd3A/exec",
+          { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify(payload) 
+          }
+        );
 
-      const status = document.getElementById('status');
-      if (res.ok) { 
-        status.textContent = 'Thanks! Your feedback was submitted.'; 
-        document.getElementById('comment').value=''; 
-      } else { 
-        status.textContent = 'Error submitting feedback.'; 
-        status.className='text-sm text-red-700'; 
+        const status = document.getElementById('status');
+        if (res.ok) { 
+          status.textContent = '✅ Thanks! Your feedback was submitted.';
+          status.className = 'text-sm text-green-700';
+          document.getElementById('comment').value = '';
+        } else { 
+          status.textContent = '❌ Error submitting feedback.';
+          status.className = 'text-sm text-red-700';
+        }
+      } catch (err) {
+        const status = document.getElementById('status');
+        status.textContent = '❌ Network error. Please try again.';
+        status.className = 'text-sm text-red-700';
       }
     };
   </script>
 </body>
 </html>
-
