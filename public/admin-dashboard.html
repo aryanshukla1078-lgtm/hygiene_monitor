@@ -2,104 +2,44 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Swachh Scan — Admin Dashboard</title>
+  <title>Admin Dashboard — Hygiene Feedback</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-50">
-  <div class="max-w-4xl mx-auto p-6 space-y-6">
-    <h1 class="text-2xl font-semibold">Admin Dashboard</h1>
-    <div class="flex space-x-4">
-      <button onclick="logout()" class="bg-gray-800 text-white px-4 py-2 rounded">Logout</button>
-      <button onclick="goHome()" class="bg-gray-600 text-white px-4 py-2 rounded">🏠 Home</button>
-    </div>
-
-    <div>
-      <h2 class="text-lg font-semibold mt-4">Summary</h2>
-      <div id="summary" class="text-sm text-gray-700"></div>
-      <canvas id="staffChart" class="mt-4"></canvas>
-    </div>
-
-    <div>
-      <h2 class="text-lg font-semibold mt-6">Recent Feedback</h2>
-      <table class="w-full text-sm border mt-2">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="p-2">Location</th>
-            <th class="p-2">Cleanliness</th>
-            <th class="p-2">Water/Soap</th>
-            <th class="p-2">Hygiene</th>
-            <th class="p-2">Odor</th>
-            <th class="p-2">Comment</th>
-            <th class="p-2">Date</th>
-          </tr>
-        </thead>
-        <tbody id="feedbackTable"></tbody>
-      </table>
-    </div>
-  </div>
+<body class="bg-gray-100 p-6">
+  <h1 class="text-2xl font-bold mb-4">Admin Dashboard</h1>
+  <table id="feedbackTable" class="table-auto border-collapse border border-gray-400 w-full">
+    <thead>
+      <tr class="bg-gray-200">
+        <th class="border px-2 py-1">Location</th>
+        <th class="border px-2 py-1">Cleanliness</th>
+        <th class="border px-2 py-1">WaterSoap</th>
+        <th class="border px-2 py-1">Hygiene</th>
+        <th class="border px-2 py-1">Odor</th>
+        <th class="border px-2 py-1">Comment</th>
+        <th class="border px-2 py-1">Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = '/admin.html';
-
-    function logout() {
-      localStorage.removeItem('token');
-      window.location.href = '/';
-    }
-    function goHome() {
-      window.location.href = '/index.html';
-    }
-
-    async function loadSummary() {
-      const res = await fetch('/api/admin/summary', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      document.getElementById('summary').innerHTML =
-        `Total Feedback: ${data.totalFeedback}`;
-
-      const ctx = document.getElementById('staffChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: data.staffPerformance.map(s => s.name),
-          datasets: [{
-            label: 'Avg Rating',
-            data: data.staffPerformance.map(s => s.avg_rating),
-            backgroundColor: 'rgba(59, 130, 246, 0.6)'
-          }]
-        },
-        options: {
-          scales: { y: { beginAtZero: true, max: 5 } }
-        }
-      });
-    }
-
-    async function loadFeedback() {
-      const res = await fetch('/api/admin/feedback', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    async function loadData() {
+      const res = await fetch("https://script.google.com/macros/s/AKfycbxA75Wu1SUWPR8j2odOfVIgLBi3APolpYaG0HQXsMKWUBxFOjJo35oTXXaKW4jjYd3A/exec");
       const rows = await res.json();
-      const tbody = document.getElementById('feedbackTable');
-      tbody.innerHTML = '';
-      rows.forEach(f => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-2">${f.location}</td>
-          <td class="p-2">${f.cleanliness}</td>
-          <td class="p-2">${f.water_soap}</td>
-          <td class="p-2">${f.hygiene}</td>
-          <td class="p-2">${f.odor}</td>
-          <td class="p-2">${f.comment || ''}</td>
-          <td class="p-2">${f.created_at}</td>
-        `;
+      const tbody = document.querySelector("#feedbackTable tbody");
+
+      rows.slice(1).forEach(r => {
+        const tr = document.createElement("tr");
+        r.forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          td.className = "border px-2 py-1";
+          tr.appendChild(td);
+        });
         tbody.appendChild(tr);
       });
     }
-
-    loadSummary();
-    loadFeedback();
+    loadData();
   </script>
 </body>
 </html>
